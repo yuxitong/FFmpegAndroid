@@ -8,10 +8,13 @@
 #define LOGE(format, ...) __android_log_print(ANDROID_LOG_ERROR, "(>_<)", format, ##__VA_ARGS__)
 int *isPlay = 0;
 
+
 //传入文件开始推流
 JNIEXPORT jint JNICALL
-Java_com_yxt_ffmpegandroid_MainActivity_startStream(JNIEnv *env, jobject obj, jstring input_jstr,
-                                               jstring output_jstr) {
+Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jstring input_jstr,
+                                                   jstring output_jstr) {
+
+
 
 
     //java string -> c char*
@@ -105,6 +108,13 @@ Java_com_yxt_ffmpegandroid_MainActivity_startStream(JNIEnv *env, jobject obj, js
 
     int frame_index = 0;
     int64_t start_time = av_gettime();
+
+    //获取java对象
+//    jclass jmapclass = (*env)->FindClass("com/yxt/ffmpegandroid/jni/KStream");
+    jclass class = (*env)->FindClass(env, "com/yxt/ffmpegandroid/jni/KStream");
+//    jclass class = (*env)->FindClass(env, obj);
+    jmethodID isStream = (*env)->GetMethodID(env, class, "isStream", "()V");
+
     while (1) {
         if (isPlay != 0) {
             break;
@@ -123,12 +133,14 @@ Java_com_yxt_ffmpegandroid_MainActivity_startStream(JNIEnv *env, jobject obj, js
             AVRational time_base1 = inFmtCtx->streams[videoindex]->time_base;
             //Duration between 2 frames (us)
             int64_t calc_duration =
-                    (int64_t) ((double) AV_TIME_BASE / av_q2d(inFmtCtx->streams[videoindex]->r_frame_rate));
+                    (int64_t) ((double) AV_TIME_BASE /
+                               av_q2d(inFmtCtx->streams[videoindex]->r_frame_rate));
             //Parameters
             pkt.pts = (int64_t) ((double) (frame_index * calc_duration) /
                                  (double) (av_q2d(time_base1) * AV_TIME_BASE));
             pkt.dts = pkt.pts;
-            pkt.duration = (int64_t) ((double) calc_duration / (double) (av_q2d(time_base1) * AV_TIME_BASE));
+            pkt.duration = (int64_t) ((double) calc_duration /
+                                      (double) (av_q2d(time_base1) * AV_TIME_BASE));
         }
         //读入速度比较快，可以在这里调整读取速度减轻服务器压力
         if (pkt.stream_index == videoindex) {
@@ -170,6 +182,8 @@ Java_com_yxt_ffmpegandroid_MainActivity_startStream(JNIEnv *env, jobject obj, js
     isPlay = 0;
     //写结尾
     av_write_trailer(outFmtCtx);
+    (*env)->CallVoidMethod(env, obj, isStream, 0);
+
     end:
     //释放自愿
     avformat_close_input(&inFmtCtx);
@@ -179,6 +193,7 @@ Java_com_yxt_ffmpegandroid_MainActivity_startStream(JNIEnv *env, jobject obj, js
     avformat_free_context(outFmtCtx);
     if (ret < 0 && ret != AVERROR_EOF) {
         LOGE("Error occurred.\n");
+        (*env)->CallVoidMethod(env, obj, isStream, 0);
         return -1;
     }
     return 0;
@@ -186,6 +201,10 @@ Java_com_yxt_ffmpegandroid_MainActivity_startStream(JNIEnv *env, jobject obj, js
 
 //停止推流
 JNIEXPORT jint JNICALL
-Java_com_yxt_ffmpegandroid_MainActivity_stop(JNIEnv *env, jobject obj) {
+Java_com_yxt_ffmpegandroid_jni_KStream_stop(JNIEnv *env, jobject obj) {
     isPlay = 1;
+    jclass class = (*env)->FindClass(env, "com/yxt/ffmpegandroid/jni/KStream");
+//    jclass class = (*env)->FindClass(env, obj);
+    jmethodID isStream = (*env)->GetMethodID(env, class, "isStream", "()V");
+    (*env)->CallVoidMethod(env, obj, isStream, 0);
 }
