@@ -14,9 +14,14 @@ JNIEXPORT jint JNICALL
 Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jstring input_jstr,
                                                    jstring output_jstr) {
 
+    //获取java对象
+//    jclass jmapclass = (*env)->FindClass("com/yxt/ffmpegandroid/jni/KStream");
+    jclass class = (*env)->FindClass(env, "com/yxt/ffmpegandroid/jni/KStream");
+//    jclass class = (*env)->FindClass(env, obj);
+    jmethodID isStream = (*env)->GetMethodID(env, class, "isStream", "(I)V");
 
 
-
+    int error = 0;
     //java string -> c char*
     //视频文件所在路径
     const char *input_cstr = (*env)->GetStringUTFChars(env, input_jstr, NULL);
@@ -40,12 +45,14 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
 //        av_strerror(ret, buf, 1024);
 //        printf("Couldn't open file %s:", input_cstr, ret);
 //        LOGE("Couldn't open file %s: ", input_cstr, ret);
+        error = 2;
         LOGE("Could not open input file.");
         goto end;
     }
     //获取文件信息
     if ((ret = avformat_find_stream_info(inFmtCtx, 0)) < 0) {
         LOGE("Failed to retrieve input stream information");
+        error = 3;
         goto end;
     }
     //获取视频的索引位置
@@ -62,6 +69,7 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
     if (!outFmtCtx) {
         LOGE("Could not create output context\n");
         ret = AVERROR_UNKNOWN;
+        error = 4;
         goto end;
     }
 
@@ -73,12 +81,14 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
         if (!out_stream) {
             LOGE("Failed allocating output stream\n");
             ret = AVERROR_UNKNOWN;
+            error = 5;
             goto end;
         }
         //复制解码器上下文的 设置
         ret = avcodec_copy_context(out_stream->codec, in_stream->codec);
         if (ret < 0) {
             LOGE("Failed to copy context from input to output stream codec context\n");
+            error = 6;
             goto end;
         }
         //全局的header
@@ -95,6 +105,7 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
         ret = avio_open(&outFmtCtx->pb, output_cstr, AVIO_FLAG_WRITE);
         if (ret < 0) {
             LOGE("Could not open output URL '%s'", output_cstr);
+            error = 7;
             goto end;
         }
     }
@@ -102,6 +113,7 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
     ret = avformat_write_header(outFmtCtx, NULL);
     if (ret < 0) {
         LOGE("Error occurred when opening output URL\n");
+        error = 8;
         goto end;
     }
 
@@ -109,11 +121,7 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
     int frame_index = 0;
     int64_t start_time = av_gettime();
 
-    //获取java对象
-//    jclass jmapclass = (*env)->FindClass("com/yxt/ffmpegandroid/jni/KStream");
-    jclass class = (*env)->FindClass(env, "com/yxt/ffmpegandroid/jni/KStream");
-//    jclass class = (*env)->FindClass(env, obj);
-    jmethodID isStream = (*env)->GetMethodID(env, class, "isStream", "()V");
+
 
     while (1) {
         if (isPlay != 0) {
@@ -193,7 +201,7 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
     avformat_free_context(outFmtCtx);
     if (ret < 0 && ret != AVERROR_EOF) {
         LOGE("Error occurred.\n");
-        (*env)->CallVoidMethod(env, obj, isStream, 0);
+        (*env)->CallVoidMethod(env, obj, isStream, error);
         return -1;
     }
     return 0;
@@ -203,8 +211,8 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
 JNIEXPORT jint JNICALL
 Java_com_yxt_ffmpegandroid_jni_KStream_stop(JNIEnv *env, jobject obj) {
     isPlay = 1;
-    jclass class = (*env)->FindClass(env, "com/yxt/ffmpegandroid/jni/KStream");
-//    jclass class = (*env)->FindClass(env, obj);
-    jmethodID isStream = (*env)->GetMethodID(env, class, "isStream", "()V");
-    (*env)->CallVoidMethod(env, obj, isStream, 0);
+//    jclass class = (*env)->FindClass(env, "com/yxt/ffmpegandroid/jni/KStream");
+////    jclass class = (*env)->FindClass(env, obj);
+//    jmethodID isStream = (*env)->GetMethodID(env, class, "isStream", "(I)V");
+//    (*env)->CallVoidMethod(env, obj, isStream, 1);
 }

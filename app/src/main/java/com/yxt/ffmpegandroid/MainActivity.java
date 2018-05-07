@@ -47,7 +47,9 @@ public class MainActivity extends AppCompatActivity {
                 if (videoStr != null && rtmpStr != null) {
 
                 }
-
+                videoStr = Environment.getExternalStorageDirectory()
+                        + "/youbang/123.mp4";
+                rtmpStr = "rtmp://106.14.145.25/live/vehicle1259";
                 kstream.pushStream(videoStr,rtmpStr);
                 break;
             case R.id.stopBtn:
