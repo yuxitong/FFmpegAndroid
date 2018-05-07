@@ -15,9 +15,26 @@ public class KStream {
     Handler handler;
     //是否在推流  true 是   flase 否
     private boolean isStream = false;
+    private StateListener stateListener;
 
     static {
         System.loadLibrary("stream");
+    }
+
+    public interface StateListener {
+        //网络错误
+        void netWorkError();
+        //文件错误
+        void fileError();
+        //播放结束或者点击停止播放
+        void stop();
+        //未知错误
+        void unknownError();
+    }
+
+    public void setCallBack(StateListener stateListener) {
+        this.stateListener = stateListener;
+
     }
 
     public KStream(Context context) {
@@ -28,21 +45,29 @@ public class KStream {
                 switch (msg.what) {
                     case 0:
                         Toast.makeText(KStream.this.context, "推流结束", Toast.LENGTH_SHORT).show();
+                        if (stateListener != null)
+                            stateListener.stop();
                         isStream = false;
                         break;
                     case 2:
                         //推流文件找不到
                         Toast.makeText(KStream.this.context, "找不到文件或文件无法打开", Toast.LENGTH_SHORT).show();
+                        if (stateListener != null)
+                            stateListener.fileError();
                         isStream = false;
                         break;
                     case 7:
                         //网络出现问题
                         Toast.makeText(KStream.this.context, "断网报错", Toast.LENGTH_SHORT).show();
+                        if (stateListener != null)
+                            stateListener.netWorkError();
                         isStream = false;
                         break;
                     default:
                         //其他异常
                         Toast.makeText(KStream.this.context, "发生未知错误，反正是停止推流了", Toast.LENGTH_SHORT).show();
+                        if (stateListener != null)
+                            stateListener.unknownError();
                         isStream = false;
                         break;
 

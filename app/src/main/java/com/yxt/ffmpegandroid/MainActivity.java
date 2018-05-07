@@ -35,6 +35,29 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         kstream = new KStream(this);
+
+
+        kstream.setCallBack(new KStream.StateListener() {
+            @Override
+            public void netWorkError() {
+
+            }
+
+            @Override
+            public void fileError() {
+
+            }
+
+            @Override
+            public void stop() {
+
+            }
+
+            @Override
+            public void unknownError() {
+
+            }
+        });
         // Example of a call to a native method
     }
 
