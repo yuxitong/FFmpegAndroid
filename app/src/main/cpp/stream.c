@@ -4,6 +4,8 @@
 #include "libavutil/log.h"
 #include "libavutil/time.h"
 #include "Android/log.h"
+#include "libswscale/swscale.h"
+#include "libavutil/imgutils.h"
 
 #define LOGE(format, ...) __android_log_print(ANDROID_LOG_ERROR, "(>_<)", format, ##__VA_ARGS__)
 int *isPlay = 0;
@@ -43,7 +45,7 @@ Java_com_yxt_ffmpegandroid_jni_KStream_startStream(JNIEnv *env, jobject obj, jst
     //Input
     if ((ret = avformat_open_input(&inFmtCtx, input_cstr, 0, 0)) < 0) {
 //        av_strerror(ret, buf, 1024);
-//        printf("Couldn't open file %s:", input_cstr, ret);
+//        LOGE("Couldn't open file %s:", input_cstr, ret);
 //        LOGE("Couldn't open file %s: ", input_cstr, ret);
         error = 2;
         LOGE("Could not open input file.");
@@ -215,4 +217,101 @@ Java_com_yxt_ffmpegandroid_jni_KStream_stop(JNIEnv *env, jobject obj) {
 ////    jclass class = (*env)->FindClass(env, obj);
 //    jmethodID isStream = (*env)->GetMethodID(env, class, "isStream", "(I)V");
 //    (*env)->CallVoidMethod(env, obj, isStream, 1);
+}
+
+
+
+
+
+//extern "C"
+JNIEXPORT jint JNICALL Java_com_yxt_ffmpegandroid_jni_KStream_Mp4ToH2642
+        (JNIEnv *env, jobject obj, jstring srcPath, jstring desPath) {
+    jclass class = (*env)->FindClass(env, "com/yxt/ffmpegandroid/jni/KStream");
+    jmethodID isStream = (*env)->GetMethodID(env, class, "isStream", "(I)V");
+    AVFormatContext *pFormatCtx;
+    int i , videoindex;
+    AVCodecContext  *pCodecCtx;
+    AVCodec *pCodec;
+    AVFrame *pFrame;
+    AVPacket *packet;
+    const char *filepath = (*env)->GetStringUTFChars(env, srcPath, NULL);
+    const char *outPath = (*env)->GetStringUTFChars(env, desPath, NULL);
+    FILE *fp_h264 = fopen(outPath , "wb+");
+
+    av_register_all();
+    avformat_network_init();
+    pFormatCtx = avformat_alloc_context();
+    if(avformat_open_input(&pFormatCtx , filepath , NULL , NULL) < 0)
+    {
+        (*env)->CallVoidMethod(env, obj, isStream, 2);
+        return -1;
+    }
+
+    if(avformat_find_stream_info(pFormatCtx , NULL) < 0)
+    {
+        LOGE("Couldn't find stream information.\n");
+        return -1;
+    }
+
+    videoindex = -1;
+    for (i = 0 ; i < pFormatCtx->nb_streams ; i++)
+    {
+        if(pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+        {
+            videoindex = i;
+            break;
+        }
+    }
+
+    if(videoindex == -1)
+    {
+        LOGE("Didn't find a video stream.\n");
+        return -1;
+    }
+
+    pCodecCtx = avcodec_alloc_context3(NULL);
+    if (pCodecCtx == NULL)
+    {
+        LOGE("Could not allocate AVCodecContext\n");
+        return -1;
+    }
+
+    int result = avcodec_parameters_to_context(pCodecCtx , pFormatCtx->streams[videoindex]->codecpar);
+
+    pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
+    if(pCodec==NULL)
+    {
+        LOGE("Codec not found.\n");
+        return -1;
+    }
+
+    if(avcodec_open2(pCodecCtx, pCodec,NULL)<0)
+    {
+        LOGE("Could not open codec.\n");
+        return -1;
+    }
+
+    pFrame = av_frame_alloc();
+    packet=(AVPacket *)av_malloc(sizeof(AVPacket));
+
+    av_dump_format(pFormatCtx , 0 , filepath , 0);
+    AVBitStreamFilterContext* h264bsfc = av_bitstream_filter_init("h264_mp4toannexb");
+    while(av_read_frame(pFormatCtx , packet) >= 0)
+    {
+        if(packet->stream_index == videoindex)
+        {
+            av_bitstream_filter_filter(h264bsfc , pCodecCtx , NULL , &packet->data , &packet->size, packet->data , packet->size , 0);
+            fwrite(packet->data , 1 , packet->size , fp_h264);
+        }
+        av_free_packet(packet);
+    }
+
+    av_bitstream_filter_close(h264bsfc);
+    fclose(fp_h264);
+
+    av_frame_free(&pFrame);
+    avcodec_close(pCodecCtx);
+    avformat_close_input(&pFormatCtx);
+    (*env)->CallVoidMethod(env, obj, isStream, 0);
+    return 1;
 }

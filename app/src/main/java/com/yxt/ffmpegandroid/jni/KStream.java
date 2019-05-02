@@ -90,6 +90,14 @@ public class KStream {
 
     private native int startStream(String videoStr, String streamAddress);
 
+    /**
+     * Mp4转换为H264
+     * @param videoStr Mp4地址
+     * @param h264Str H264地址
+     * @return
+     */
+    public native int Mp4ToH2642(String videoStr, String h264Str);
+
     public native int stop();
 
     //是否推流的状态回调

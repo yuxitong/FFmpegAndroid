@@ -78,6 +78,16 @@ public class MainActivity extends AppCompatActivity {
             case R.id.stopBtn:
                 kstream.stop();
                 break;
+            case R.id.test:
+//                kstream.Mp4ToH264(Environment.getExternalStorageDirectory()
+//                        + "/youbang/123.mp4",
+//                        Environment.getExternalStorageDirectory()
+//                                + "/youbang/123.h264");
+                kstream.Mp4ToH2642(Environment.getExternalStorageDirectory()
+                        + "/youbang/123.mp4",
+                        Environment.getExternalStorageDirectory()
+                                + "/youbang/123.h264");
+                break;
         }
 
     }
@@ -109,6 +119,8 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
+
+
 
 
 }

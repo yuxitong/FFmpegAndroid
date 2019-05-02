@@ -70,7 +70,6 @@ include $(CLEAR_VARS)
 #arm64-v8a/libopencv_contrib.a exists  or that its path is correct prebuild error
 TARGET_ARCH_ABI := armeabi-v7a
 
-
 LOCAL_MODULE     := stream
 LOCAL_SRC_FILES  := stream.c
 LOCAL_C_INCLUDES += \

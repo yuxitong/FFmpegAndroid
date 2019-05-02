@@ -41,5 +41,13 @@
         android:text="停止推流"
         android:onClick="BtnClick"
         android:layout_marginTop="20dp"/>
+    <Button
+        android:id="@+id/test"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:textSize="17dp"
+        android:text="button"
+        android:onClick="BtnClick"
+        android:layout_marginTop="20dp"/>
 
 </LinearLayout>
