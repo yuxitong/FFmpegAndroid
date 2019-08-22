@@ -1,4 +1,4 @@
-package com.yxt.ffmpegandroid;
+package com.yxt.ffmpegandroid.activity;
 
 import android.app.Activity;
 import android.content.pm.PackageInfo;
@@ -12,23 +12,20 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
+import com.yxt.ffmpegandroid.R;
 import com.yxt.ffmpegandroid.jni.KStream;
 
-public class MainActivity extends AppCompatActivity {
+public class FilePusherActivity extends AppCompatActivity {
     private static final int PERMISSIONS_REQUEST_CODE = 1;
 
     private KStream kstream;
     // Used to load the 'native-lib' library on application startup.
-    static {
-//        System.loadLibrary("native-lib");
-        System.loadLibrary("stream");
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_filepusher);
         //权限申请
         if (!allPermissionsGranted()) {
             requestPermissions(getRequiredPermissions(), PERMISSIONS_REQUEST_CODE);
